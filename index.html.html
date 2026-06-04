@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тренировки</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f8f5f0; --surface:#ffffff; --surface2:#f0ebe2;
+  --accent:#c8522a; --accent2:#7a6b4f; --red:#c0392b;
+  --text:#2c2416; --muted:#9a8c78; --border:#ddd6c8;
+  --green:#5a8a5a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;padding-bottom:80px;}
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;}
+.nav-btn{flex:1;padding:12px 8px;text-align:center;cursor:pointer;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;transition:color 0.2s;border:none;background:none;}
+.nav-btn .nav-icon{font-size:20px;display:block;margin-bottom:3px;}
+.nav-btn.active{color:var(--accent);}
+
+.page{display:none;padding:20px 16px;}
+.page.active{display:block;}
+
+.page-header{text-align:center;margin-bottom:24px;padding:20px 16px 18px;margin:-20px -16px 24px;background:var(--accent);}
+.page-header h1{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:4px;color:#ffffff;line-height:1;}
+.page-header p{color:rgba(255,255,255,0.75);font-size:12px;margin-top:4px;letter-spacing:1px;text-transform:uppercase;}
+
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;}
+.stat-card .num{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--accent);line-height:1;}
+.stat-card .label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
+
+.week-tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+.week-tab{flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-size:13px;color:var(--muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.week-tab.active{background:var(--accent);color:#fffdf7;border-color:var(--accent);font-weight:600;}
+
+.progress-bar-wrap{background:var(--surface2);border-radius:4px;height:4px;margin-bottom:20px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width 0.5s ease;}
+.week-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;}
+
+.day-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:16px;overflow:hidden;transition:border-color 0.3s;}
+.day-card.completed{border-color:var(--accent);}
+.day-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;cursor:pointer;user-select:none;}
+.day-left{display:flex;align-items:center;gap:12px;}
+.day-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.day-a .day-icon{background:rgba(200,82,42,0.12);}
+.day-b .day-icon{background:rgba(122,107,79,0.15);}
+.day-c .day-icon{background:rgba(255,71,87,0.15);}
+.day-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;}
+.day-subtitle{font-size:11px;color:var(--muted);margin-top:2px;}
+.day-badge{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;}
+.badge-done{background:rgba(200,82,42,0.2);color:var(--accent);}
+.badge-pending{background:var(--surface2);color:var(--muted);}
+.chevron{color:var(--muted);font-size:14px;transition:transform 0.3s;margin-left:8px;}
+.day-card.open .chevron{transform:rotate(180deg);}
+.day-body{display:none;padding:0 18px 18px;}
+.day-card.open .day-body{display:block;}
+
+/* WARMUP / COOLDOWN BLOCKS */
+.routine-block{border-radius:12px;padding:14px;margin-bottom:10px;}
+.warmup-block{background:rgba(200,82,42,0.06);border:1px solid rgba(200,82,42,0.25);}
+.cooldown-block{background:rgba(90,138,90,0.06);border:1px solid rgba(90,138,90,0.2);}
+.routine-title{font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.warmup-block .routine-title{color:#c8522a;}
+.cooldown-block .routine-title{color:var(--green);}
+.routine-steps{display:flex;flex-direction:column;gap:6px;}
+.routine-step{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;background:var(--bg);border-radius:8px;}
+.step-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
+.warmup-block .step-num{background:rgba(200,82,42,0.15);color:#c8522a;}
+.cooldown-block .step-num{background:rgba(90,138,90,0.15);color:var(--green);}
+.step-text{font-size:13px;line-height:1.4;}
+.step-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.section-divider{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--muted);padding:10px 0 6px;border-top:1px solid var(--border);margin-bottom:8px;}
+
+.exercise-row{background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:10px;}
+.ex-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.ex-name{font-weight:600;font-size:14px;line-height:1.3;}
+.ex-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.ex-link{flex-shrink:0;background:rgba(122,107,79,0.15);color:var(--accent2);border:none;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:4px;white-space:nowrap;}
+.weight-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
+.weight-label{font-size:11px;color:var(--muted);white-space:nowrap;}
+.weight-input-wrap{display:flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;gap:4px;flex:1;}
+.weight-input{background:transparent;border:none;color:var(--accent);font-family:'Bebas Neue',sans-serif;font-size:24px;width:100%;outline:none;-moz-appearance:textfield;text-align:center;}
+.weight-input::-webkit-outer-spin-button,.weight-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.weight-input::placeholder{color:var(--border);}
+.weight-unit{font-size:12px;color:var(--muted);white-space:nowrap;}
+
+.cardio-block{background:rgba(200,82,42,0.06);border:1px solid rgba(200,82,42,0.2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.cardio-text{font-size:13px;color:var(--accent);font-weight:500;}
+.cardio-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* DATE PICKER */
+.date-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;background:var(--surface2);border-radius:10px;padding:10px 12px;}
+.date-label{font-size:12px;color:var(--muted);white-space:nowrap;}
+.date-input{flex:1;background:transparent;border:none;color:var(--text);font-size:14px;outline:none;font-family:'Inter',sans-serif;}
+.date-input::-webkit-calendar-picker-indicator{filter:invert(0.5);}
+
+.note-area{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:10px 12px;resize:none;outline:none;margin-bottom:12px;height:56px;}
+.note-area::placeholder{color:var(--muted);}
+
+.done-btn{width:100%;padding:14px;border-radius:12px;border:2px solid var(--border);background:transparent;color:var(--muted);font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer;transition:all 0.3s;}
+.done-btn.active{border-color:var(--accent);background:rgba(200,82,42,0.1);color:var(--accent);}
+
+.reset-btn{width:100%;margin-top:28px;padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;}
+
+/* PROGRESS PAGE */
+.progress-hero{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;text-align:center;}
+.big-num{font-family:'Bebas Neue',sans-serif;font-size:64px;color:var(--accent);line-height:1;}
+.big-label{font-size:12px;color:#6b5c4a;text-transform:uppercase;letter-spacing:2px;margin-top:4px;}
+.goal-bar-wrap{background:var(--surface2);border-radius:6px;height:10px;margin:16px 0 8px;overflow:hidden;}
+.goal-bar-fill{height:100%;background:linear-gradient(90deg,#7a6b4f,#c8522a);border-radius:6px;transition:width 0.8s ease;}
+.goal-bar-labels{display:flex;justify-content:space-between;font-size:11px;color:#6b5c4a;}
+
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#ffffff;margin:20px 0 12px;background:var(--accent);padding:8px 12px;border-radius:8px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+.info-card .val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#7a4a2a;line-height:1;}
+.info-card .lbl{font-size:10px;color:#6b5c4a;text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
+
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px;}
+.chart-label{font-size:13px;color:#4a3a2a;font-weight:600;letter-spacing:0.5px;margin-bottom:14px;}
+
+.weight-log-form{display:flex;gap:8px;margin-bottom:12px;}
+.log-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Bebas Neue',sans-serif;font-size:22px;padding:10px 14px;outline:none;text-align:center;-moz-appearance:textfield;}
+.log-input::-webkit-outer-spin-button,.log-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.log-input::placeholder{color:var(--border);}
+.log-btn{background:var(--accent);color:#fffdf7;border:none;border-radius:8px;padding:10px 18px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer;white-space:nowrap;}
+
+.log-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;margin-top:10px;}
+.log-item{display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:#f0ebe2;border-radius:8px;padding:10px 12px;font-size:13px;color:#2c2416;}
+.log-date{color:#4a3a2a;font-size:11px;}
+.log-kg{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#c8522a;}
+.log-del{color:#9a8c78;cursor:pointer;font-size:16px;padding:0 4px;}
+
+/* ROADMAP */
+.roadmap-item{display:flex;gap:12px;margin-bottom:6px;position:relative;}
+.roadmap-item:not(:last-child)::after{content:'';position:absolute;left:17px;top:38px;bottom:-6px;width:2px;background:#d4ccbc;}
+.roadmap-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:2px solid #d4ccbc;background:#e8e0d0;}
+.roadmap-dot.active{border-color:#c8522a;background:rgba(200,82,42,0.15);}
+.roadmap-dot.done{border-color:#c8522a;background:#c8522a;}
+.roadmap-content{flex:1;padding-bottom:14px;}
+.roadmap-period{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:#2c2416;}
+.roadmap-period.active{color:#c8522a;}
+.roadmap-focus{font-size:12px;font-weight:600;color:#7a4a2a;margin:2px 0;}
+.roadmap-desc{font-size:13px;color:#4a3a2a;line-height:1.5;}
+.roadmap-status{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;margin-top:4px;font-weight:600;}
+.status-now{background:rgba(200,82,42,0.2);color:#c8522a;}
+.status-next{background:#e8e0d0;color:#6b5c4a;}
+.status-done{background:rgba(90,138,90,0.2);color:#3a6b3a;}
+
+canvas{width:100%!important;}
+select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;margin-bottom:10px;}
+
+/* TIMER */
+.timer-fab{position:fixed;bottom:90px;right:16px;z-index:200;}
+.timer-bubble{background:var(--accent);border-radius:20px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(200,82,42,0.35);cursor:pointer;transition:all 0.2s;}
+.timer-bubble.running{background:var(--surface);border:2px solid var(--accent);}
+.timer-time{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;min-width:52px;text-align:center;}
+.timer-bubble:not(.running) .timer-time{color:#fffdf7;}
+.timer-controls{display:flex;gap:6px;}
+.timer-btn{background:rgba(255,255,255,0.2);border:none;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;color:#fffdf7;font-weight:600;}
+.timer-bubble.running .timer-btn{background:var(--surface2);color:var(--text);}
+.timer-presets{display:flex;gap:6px;margin-top:8px;justify-content:flex-end;}
+.timer-preset{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;}
+.timer-preset.active-preset{background:var(--accent);color:#fffdf7;border-color:var(--accent);}
+</style>
+</head>
+<body>
+
+<!-- WORKOUT PAGE -->
+<div class="page active" id="page-workout">
+  <div class="page-header"><h1>ТРЕНИРОВКИ</h1><p>Программа · Учёт весов</p></div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="num" id="stat-done">0</div><div class="label">На этой неделе</div></div>
+    <div class="stat-card"><div class="num" id="stat-streak">0</div><div class="label">Недель подряд</div></div>
+    <div class="stat-card"><div class="num" id="stat-total">0</div><div class="label">Всего тренировок</div></div>
+  </div>
+  <div class="week-tabs" id="weekTabs"></div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+  <div id="dayCards"></div>
+  <button class="reset-btn" onclick="resetWeek()">↺ Сбросить текущую неделю</button>
+</div>
+
+<!-- PROGRESS PAGE -->
+<div class="page" id="page-progress">
+  <div class="page-header"><h1>ПРОГРЕСС</h1><p>Год · Цель · Графики</p></div>
+
+  <div class="progress-hero">
+    <div class="big-num" id="pg-done">0</div>
+    <div class="big-label">тренировок выполнено</div>
+    <div class="goal-bar-wrap"><div class="goal-bar-fill" id="goalBar" style="width:0%"></div></div>
+    <div class="goal-bar-labels"><span>0</span><span id="pg-pct">0%</span><span>156</span></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;">Цель: 3 тренировки × 52 недели = 156 за год</div>
+  </div>
+
+  <div class="two-col">
+    <div class="info-card"><div class="val" id="pg-weeks">0</div><div class="lbl">Недель подряд</div></div>
+    <div class="info-card"><div class="val" id="pg-left">156</div><div class="lbl">До цели осталось</div></div>
+  </div>
+
+  <div class="section-title">📅 ИСТОРИЯ ТРЕНИРОВОК</div>
+  <div class="chart-card">
+    <div class="chart-label">Активность по неделям (тренировок)</div>
+    <canvas id="activityChart" height="140"></canvas>
+    <div id="dateHistory" style="margin-top:14px;display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;"></div>
+  </div>
+
+  <div class="section-title">🗺️ ПЛАН НА ГОД</div>
+  <div class="chart-card">
+    <div class="chart-label">Твой путь · этапы и цели</div>
+    <div id="roadmap"></div>
+  </div>
+
+  <div class="section-title">📉 МОЙ ВЕС</div>
+  <div class="chart-card">
+    <div class="chart-label">Динамика веса (кг)</div>
+    <div class="weight-log-form">
+      <input class="log-input" type="number" id="weightInput" placeholder="108" step="0.1">
+      <button class="log-btn" onclick="addWeight()">+ КГ</button>
+    </div>
+    <canvas id="weightChart" height="160"></canvas>
+    <div class="log-list" id="weightLog"></div>
+  </div>
+
+  <div class="section-title">🏋️ РАБОЧИЕ ВЕСА</div>
+  <div class="chart-card">
+    <div class="chart-label">Прогресс по упражнениям</div>
+    <select id="exSelect" onchange="renderStrengthChart()"></select>
+    <canvas id="strengthChart" height="160"></canvas>
+  </div>
+</div>
+
+<!-- TIMER -->
+<div class="timer-fab" id="timerFab">
+  <div class="timer-presets">
+    <div class="timer-preset active-preset" onclick="setPreset(60,this)">60С</div>
+    <div class="timer-preset" onclick="setPreset(90,this)">90С</div>
+    <div class="timer-preset" onclick="setPreset(120,this)">2М</div>
+  </div>
+  <div class="timer-bubble" id="timerBubble" onclick="toggleTimer()">
+    <div class="timer-time" id="timerDisplay">1:00</div>
+    <div class="timer-controls">
+      <button class="timer-btn" id="timerMainBtn">▶</button>
+      <button class="timer-btn" onclick="event.stopPropagation();resetTimer()">↺</button>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchPage('workout',this)"><span class="nav-icon">🏋️</span>ТРЕНИРОВКИ</button>
+  <button class="nav-btn" onclick="switchPage('progress',this)"><span class="nav-icon">📈</span>ПРОГРЕСС</button>
+</nav>
+
+<script>
+const GOAL = 156;
+
+const WARMUP = [
+  { text:'Кардио разогрев', sub:'Велотренажёр или эллипс — 3–5 минут лёгким темпом' },
+  { text:'Суставная разминка', sub:'Шея → плечи → локти → таз → колени — по 10 круговых движений каждый' },
+  { text:'Пустой подход', sub:'Первое упражнение дня — 30–40% от рабочего веса, 15 повторений медленно' },
+];
+
+const COOLDOWN = [
+  { text:'Колени к груди лёжа',
+    sub:'Ляг на спину на коврик. Подтяни оба колена к груди, обхвати руками голени. Мягко прижимай колени ближе к груди — чувствуешь растяжение в пояснице. Не рывками, плавно. Это главное упражнение для твоей поясницы — не пропускай.',
+    link:'https://www.youtube.com/results?search_query=колени+к+груди+растяжка+поясница' },
+  { text:'Кошка-корова',
+    sub:'Встань на четвереньки — руки под плечами, колени под бёдрами. Вдох: прогни спину вниз, подними голову и копчик вверх (корова). Выдох: округли спину вверх, опусти голову и копчик (кошка). Медленно, 10 повторений. Мягко мобилизует каждый позвонок.',
+    link:'https://www.youtube.com/results?search_query=кошка+корова+упражнение+позвоночник+техника' },
+  { text:'Растяжка грудных в дверном проёме',
+    sub:'Встань в дверной проём. Подними руки до уровня плеч, согни в локтях под 90°, предплечья упри в косяки. Медленно наклонись вперёд всем телом пока не почувствуешь растяжение в груди. Держи 40 секунд, дыши спокойно.',
+    link:'https://www.youtube.com/results?search_query=растяжка+грудных+дверной+проем+техника' },
+  { text:'Растяжка задней поверхности бедра',
+    sub:'Положи прямую ногу на скамью или стул. Стой ровно, не сутулься. Медленно наклонись к носку вытянутой ноги пока не почувствуешь натяжение под коленом и по задней поверхности бедра. Не пружинь — держи позицию 40 секунд. Потом другая нога. Снимает напряжение с поясницы через заднюю цепь.',
+    link:'https://www.youtube.com/results?search_query=растяжка+задняя+поверхность+бедра+стоя+техника' },
+  { text:'Поза ребёнка',
+    sub:'Сядь на пятки, колени чуть шире бёдер. Вытяни руки вперёд по полу и опусти лоб вниз. Тянись руками вперёд — чувствуешь как растягивается вся спина от поясницы до плеч. Держи 40–60 секунд, дышишь глубоко. Лучшее завершение тренировки при болях в пояснице.',
+    link:'https://www.youtube.com/results?search_query=поза+ребенка+растяжка+спина+техника' },
+];
+
+const PROGRAM = [
+  { id:'A', title:'ДЕНЬ А', subtitle:'Грудь · Плечи · Трицепс', icon:'💪', cls:'day-a',
+    exercises:[
+      { name:'Жим в тренажёре (грудь, сидя)', reps:'15', link:'https://www.youtube.com/results?search_query=жим+в+тренажере+грудь+техника' },
+      { name:'Сведение в кроссовере / Бабочка', reps:'15', link:'https://www.youtube.com/results?search_query=сведение+кроссовер+грудь+техника' },
+      { name:'Жим гантелей на наклонной скамье (сидя)', reps:'15', link:'https://www.youtube.com/results?search_query=жим+гантелей+наклонная+скамья+техника' },
+      { name:'Махи гантелями в стороны (сидя)', reps:'15', link:'https://www.youtube.com/results?search_query=махи+гантелями+сидя+плечи+техника' },
+      { name:'Разгибания трицепс в блоке (стоя, лёгкий вес)', reps:'15', link:'https://www.youtube.com/results?search_query=разгибания+трицепс+блок+техника' },
+    ]},
+  { id:'B', title:'ДЕНЬ Б', subtitle:'Спина · Бицепс · Корсет', icon:'🏋️', cls:'day-b',
+    exercises:[
+      { name:'Тяга верхнего блока к груди (тренажёр)', reps:'15', link:'https://www.youtube.com/results?search_query=тяга+верхнего+блока+к+груди+техника' },
+      { name:'Горизонтальная тяга в тренажёре (сидя)', reps:'15', link:'https://www.youtube.com/results?search_query=горизонтальная+тяга+тренажер+техника' },
+      { name:'Тяга Хаммер / нижний блок одной рукой (сидя)', reps:'15', link:'https://www.youtube.com/results?search_query=тяга+хаммер+тренажер+техника+спина' },
+      { name:'Сгибания на бицепс сидя на скамье', reps:'15', link:'https://www.youtube.com/results?search_query=сгибания+бицепс+сидя+гантели+техника' },
+      { name:'Планка на предплечьях (корсет)', reps:'25 сек', link:'https://www.youtube.com/results?search_query=планка+на+предплечьях+техника+правильно' },
+    ]},
+  { id:'C', title:'ДЕНЬ В', subtitle:'Ноги · Пресс · Укрепление спины', icon:'🦵', cls:'day-c',
+    exercises:[
+      { name:'Жим ногами в тренажёре (спина прижата)', reps:'15', link:'https://www.youtube.com/results?search_query=жим+ногами+тренажер+техника+поясница' },
+      { name:'Разгибание ног в тренажёре (сидя)', reps:'15', link:'https://www.youtube.com/results?search_query=разгибание+ног+тренажер+техника' },
+      { name:'Сгибание ног лёжа в тренажёре', reps:'15', link:'https://www.youtube.com/results?search_query=сгибание+ног+лежа+тренажер+техника' },
+      { name:'Гиперэкстензия — собственный вес без отягощения', reps:'15', link:'https://www.youtube.com/results?search_query=гиперэкстензия+техника+остеохондроз+поясница' },
+      { name:'Подъём ног лёжа на спине (пресс)', reps:'15', link:'https://www.youtube.com/results?search_query=подъем+ног+лежа+пресс+техника' },
+      { name:'Ягодичный мост лёжа (стабилизация таза)', reps:'15', link:'https://www.youtube.com/results?search_query=ягодичный+мост+техника+поясница' },
+    ]}
+];
+
+let currentWeek = 1;
+let db = JSON.parse(localStorage.getItem('wd3') || '{}');
+const save = (k,v) => { db[k]=v; localStorage.setItem('wd3',JSON.stringify(db)); };
+const load = (k,d='') => db[k] !== undefined ? db[k] : d;
+
+const wKey   = (w,d,e) => `w${w}_${d}_e${e}_kg`;
+const doneKey= (w,d)   => `w${w}_${d}_done`;
+const noteKey= (w,d)   => `w${w}_${d}_note`;
+const dateKey= (w,d)   => `w${w}_${d}_date`;
+
+function switchPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  if (id==='progress') renderProgressPage();
+}
+
+function totalDone() { return parseInt(load('totalWorkouts',0)); }
+
+function renderWeekTabs() {
+  const tabs = document.getElementById('weekTabs');
+  tabs.innerHTML = '';
+  const max = Math.max(currentWeek, parseInt(load('maxWeek',1)));
+  save('maxWeek', max);
+  for (let w=1; w<=max+1; w++) {
+    const t = document.createElement('div');
+    t.className = 'week-tab'+(w===currentWeek?' active':'');
+    t.textContent = `Неделя ${w}`;
+    t.onclick = () => { currentWeek=w; renderAll(); };
+    tabs.appendChild(t);
+  }
+}
+
+function countDoneThisWeek() {
+  return PROGRAM.filter(d=>load(doneKey(currentWeek,d.id),false)).length;
+}
+
+function updateWorkoutStats() {
+  const done = countDoneThisWeek();
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('progressBar').style.width = (done/3*100)+'%';
+  document.getElementById('stat-total').textContent = totalDone();
+  document.getElementById('stat-streak').textContent = load('streakWeeks',0);
+}
+
+function warmupHTML() {
+  const steps = WARMUP.map((s,i) => `
+    <div class="routine-step">
+      <div class="step-num">${i+1}</div>
+      <div><div class="step-text">${s.text}</div><div class="step-sub">${s.sub}</div></div>
+    </div>`).join('');
+  return `<div class="routine-block warmup-block">
+    <div class="routine-title">🔥 РАЗМИНКА — 7–10 минут</div>
+    <div class="routine-steps">${steps}</div>
+  </div>`;
+}
+
+function cooldownHTML() {
+  const steps = COOLDOWN.map((s,i) => `
+    <div class="routine-step">
+      <div class="step-num">${i+1}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div class="step-text">${s.text}</div>
+          <a class="ex-link" href="${s.link}" target="_blank" style="font-size:10px;padding:4px 8px;flex-shrink:0">▶ видео</a>
+        </div>
+        <div class="step-sub">${s.sub}</div>
+      </div>
+    </div>`).join('');
+  return `<div class="routine-block cooldown-block">
+    <div class="routine-title">🧘 ЗАМИНКА — 5–7 минут · особенно важна для поясницы</div>
+    <div class="routine-steps">${steps}</div>
+  </div>`;
+}
+
+function renderDays() {
+  const container = document.getElementById('dayCards');
+  container.innerHTML = `<div class="week-label">Неделя ${currentWeek}</div>`;
+  PROGRAM.forEach(day => {
+    const isDone = load(doneKey(currentWeek,day.id),false);
+    const savedDate = load(dateKey(currentWeek,day.id),'');
+    const card = document.createElement('div');
+    card.className = `day-card ${day.cls}${isDone?' completed':''}`;
+    card.id = `card-${day.id}`;
+
+    let exHTML = '';
+    day.exercises.forEach((ex,ei) => {
+      const k = wKey(currentWeek,day.id,ei);
+      const v = load(k,'');
+      exHTML += `<div class="exercise-row">
+        <div class="ex-top">
+          <div><div class="ex-name">${ex.name}</div><div class="ex-meta">4 подхода · ${ex.reps} повторений</div></div>
+          <a class="ex-link" href="${ex.link}" target="_blank">▶ техника</a>
+        </div>
+        <div class="weight-row">
+          <span class="weight-label">Рабочий вес:</span>
+          <div class="weight-input-wrap">
+            <input class="weight-input" type="number" placeholder="0" value="${v}"
+              oninput="save('${k}',this.value)" onfocus="this.select()">
+            <span class="weight-unit">кг</span>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    const nv = load(noteKey(currentWeek,day.id),'');
+
+    card.innerHTML = `
+      <div class="day-header" onclick="toggleCard('${day.id}')">
+        <div class="day-left">
+          <div class="day-icon">${day.icon}</div>
+          <div><div class="day-title">${day.title}</div><div class="day-subtitle">${day.subtitle}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="day-badge ${isDone?'badge-done':'badge-pending'}">${isDone?'✓ Готово':'Ждёт'}</span>
+          <span class="chevron">▼</span>
+        </div>
+      </div>
+      <div class="day-body">
+        ${warmupHTML()}
+        <div class="section-divider">ТРЕНИРОВКА · перерыв 60–90 сек между подходами</div>
+        ${exHTML}
+        <div class="section-divider">КАРДИО</div>
+        <div class="cardio-block">
+          <span style="font-size:20px">🚴</span>
+          <div><div class="cardio-text">Кардио после силовой</div><div class="cardio-sub">Эллипс или велотренажёр · 15–20 минут · гликоген потрачен — жир горит</div></div>
+        </div>
+        <div class="section-divider">ЗАМИНКА</div>
+        ${cooldownHTML()}
+        <div class="date-row">
+          <span class="date-label">📅 Дата тренировки:</span>
+          <input type="date" class="date-input" value="${savedDate}"
+            onchange="save('${dateKey(currentWeek,day.id)}',this.value)">
+        </div>
+        <textarea class="note-area" placeholder="Заметки: самочувствие, что даётся тяжело..."
+          oninput="save('${noteKey(currentWeek,day.id)}',this.value)">${nv}</textarea>
+        <button class="done-btn ${isDone?'active':''}" onclick="toggleDone('${day.id}')">
+          ${isDone?'✓ ТРЕНИРОВКА ВЫПОЛНЕНА':'ОТМЕТИТЬ КАК ВЫПОЛНЕННУЮ'}
+        </button>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function toggleCard(id) { document.getElementById('card-'+id).classList.toggle('open'); }
+
+function toggleDone(dayId) {
+  const k = doneKey(currentWeek,dayId);
+  const now = !load(k,false);
+  save(k,now);
+  // auto-set today's date if not set
+  const dk = dateKey(currentWeek,dayId);
+  if (now && !load(dk,'')) {
+    const today = new Date().toISOString().split('T')[0];
+    save(dk, today);
+  }
+  if (now) {
+    save('totalWorkouts', totalDone()+1);
+    if (PROGRAM.every(d=>load(doneKey(currentWeek,d.id),false))) {
+      save('streakWeeks', parseInt(load('streakWeeks',0))+1);
+    }
+  }
+  renderAll();
+}
+
+function resetWeek() {
+  if (!confirm(`Сбросить неделю ${currentWeek}?`)) return;
+  PROGRAM.forEach(d=>save(doneKey(currentWeek,d.id),false));
+  renderAll();
+}
+
+function renderAll() { renderWeekTabs(); renderDays(); updateWorkoutStats(); }
+
+// ── PROGRESS ──────────────────────────────────────────────────────────────
+let wCI=null, sCI=null, aCI=null;
+
+function renderProgressPage() {
+  const done = totalDone();
+  const pct = Math.min(100,Math.round(done/GOAL*100));
+  document.getElementById('pg-done').textContent = done;
+  document.getElementById('pg-pct').textContent = pct+'%';
+  document.getElementById('goalBar').style.width = pct+'%';
+  document.getElementById('pg-weeks').textContent = load('streakWeeks',0);
+  document.getElementById('pg-left').textContent = Math.max(0,GOAL-done);
+  renderRoadmap();
+  renderActivityChart();
+  renderDateHistory();
+  renderWeightChart();
+  populateExSelect();
+  renderStrengthChart();
+}
+
+function renderDateHistory() {
+  const box = document.getElementById('dateHistory');
+  const entries = [];
+  const maxW = parseInt(load('maxWeek',1));
+  for (let w=1; w<=maxW; w++) {
+    PROGRAM.forEach(day => {
+      const d = load(dateKey(w,day.id),'');
+      const done = load(doneKey(w,day.id),false);
+      if (d && done) entries.push({ date:d, label:`${day.title} — ${day.subtitle}`, week:w });
+    });
+  }
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+  if (!entries.length) { box.innerHTML = '<div style="font-size:12px;color:#6b5c4a;text-align:center;padding:10px;">Пока нет выполненных тренировок с датой</div>'; return; }
+  box.innerHTML = entries.slice(0,15).map(e => {
+    const d = new Date(e.date);
+    const fmt = d.toLocaleDateString('ru-RU',{day:'numeric',month:'long',weekday:'short'});
+    return `<div class="log-item" style="flex-direction:column;align-items:flex-start;gap:3px;">
+      <span class="log-date">📅 ${fmt} · Неделя ${e.week}</span>
+      <span style="font-size:13px;color:#2c2416;font-weight:600;">${e.label}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderRoadmap() {
+  const done = totalDone();
+  // roughly 3 workouts/week = 12/month
+  const months = done / 12;
+
+  const stages = [
+    {
+      period: 'Месяц 1–2 · сейчас',
+      icon: '🔧',
+      focus: 'Техника + укрепление корсета',
+      desc: 'Все упражнения через тренажёры. Свободные веса только сидя или с упором. Веса умеренные — важна техника. Гиперэкстензия и ягодичный мост — с собственным весом. Спина адаптируется, боль снижается.',
+      threshold: 0,
+      endAt: 2
+    },
+    {
+      period: 'Месяц 3–4',
+      icon: '📈',
+      focus: 'Рост весов + усложнение',
+      desc: 'Та же структура но веса стабильно растут. Добавляем свободные веса там где спина уже не болит. Увеличиваем объём. Первый заметный результат — одежда сидит иначе.',
+      threshold: 2,
+      endAt: 4
+    },
+    {
+      period: 'Месяц 5–8',
+      icon: '💪',
+      focus: 'Видимый рельеф',
+      desc: 'Тело активно меняется. Жир уходит, мышцы проявляются. Люди вокруг начинают замечать. Добавляем сложность — суперсеты, больше вариаций упражнений.',
+      threshold: 4,
+      endAt: 8
+    },
+    {
+      period: 'Месяц 9–12',
+      icon: '🏆',
+      focus: 'Атлетичная фигура',
+      desc: 'Цель достигнута. Сухое тело, видимые мышцы, здоровая спина. Переход на новую программу — более сложные движения, возможно работа с тренером на следующий уровень.',
+      threshold: 8,
+      endAt: 12
+    },
+  ];
+
+  const box = document.getElementById('roadmap');
+  box.innerHTML = stages.map(s => {
+    const isDone = months >= s.endAt;
+    const isActive = months >= s.threshold && months < s.endAt;
+    return `<div class="roadmap-item">
+      <div class="roadmap-dot ${isDone?'done':isActive?'active':''}">${isDone?'✓':s.icon}</div>
+      <div class="roadmap-content">
+        <div class="roadmap-period ${isActive?'active':''}">${s.period}</div>
+        <div class="roadmap-focus">${s.focus}</div>
+        <div class="roadmap-desc">${s.desc}</div>
+        <span class="roadmap-status ${isDone?'status-done':isActive?'status-now':'status-next'}">
+          ${isDone?'✓ Пройдено':isActive?'● Сейчас здесь':'Впереди'}
+        </span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderActivityChart() {
+  const maxW = Math.max(currentWeek,parseInt(load('maxWeek',1)));
+  const labels=[], vals=[], colors=[];
+  for (let w=Math.max(1,maxW-11); w<=maxW; w++) {
+    labels.push('Н'+w);
+    const v = PROGRAM.filter(d=>load(doneKey(w,d.id),false)).length;
+    vals.push(v);
+    colors.push(v===3?'#c8522a':v===2?'rgba(200,82,42,0.55)':'rgba(200,82,42,0.2)');
+  }
+  const ctx = document.getElementById('activityChart').getContext('2d');
+  if (aCI) aCI.destroy();
+  aCI = new Chart(ctx,{ type:'bar', data:{ labels, datasets:[{ data:vals, backgroundColor:colors, borderRadius:6 }]},
+    options:{ plugins:{legend:{display:false}}, scales:{
+      x:{ticks:{color:'#9a8c78',font:{size:11}},grid:{display:false}},
+      y:{ticks:{color:'#9a8c78',font:{size:10},stepSize:1},grid:{color:'#d4ccbc'},max:3,min:0}
+    }}});
+}
+
+function addWeight() {
+  const inp = document.getElementById('weightInput');
+  const v = parseFloat(inp.value);
+  if (!v||v<30||v>300) return;
+  const logs = JSON.parse(load('weightLogs','[]'));
+  logs.push({ kg:v, date:new Date().toLocaleDateString('ru-RU') });
+  save('weightLogs',JSON.stringify(logs));
+  inp.value='';
+  renderWeightChart();
+}
+
+function delWeight(i) {
+  const logs = JSON.parse(load('weightLogs','[]'));
+  logs.splice(i,1);
+  save('weightLogs',JSON.stringify(logs));
+  renderWeightChart();
+}
+
+function renderWeightChart() {
+  const logs = JSON.parse(load('weightLogs','[]'));
+  document.getElementById('weightLog').innerHTML = logs.slice().reverse().map((l,i)=>
+    `<div style="display:flex;justify-content:space-between;align-items:center;background:#f0ebe2;border-radius:8px;padding:8px 12px;">
+      <span class="log-date">${l.date}</span>
+      <span class="log-kg">${l.kg} кг</span>
+      <span class="log-del" onclick="delWeight(${logs.length-1-i})">✕</span>
+    </div>`
+  ).join('');
+  const ctx = document.getElementById('weightChart').getContext('2d');
+  if (wCI) wCI.destroy();
+  if (!logs.length) return;
+  wCI = new Chart(ctx,{ type:'line', data:{ labels:logs.map(l=>l.date),
+    datasets:[{ data:logs.map(l=>l.kg), borderColor:'#c8522a', backgroundColor:'rgba(200,82,42,0.08)', tension:0.4, pointBackgroundColor:'#c8522a', pointRadius:4 }]},
+    options:{ plugins:{legend:{display:false}}, scales:{
+      x:{ticks:{color:'#9a8c78',font:{size:10}},grid:{color:'#d4ccbc'}},
+      y:{ticks:{color:'#9a8c78',font:{size:10}},grid:{color:'#d4ccbc'},beginAtZero:false}
+    }}});
+}
+
+function getAllExercises() {
+  const list=[];
+  PROGRAM.forEach(day=>day.exercises.forEach((ex,ei)=>list.push({dayId:day.id,name:ex.name,ei})));
+  return list;
+}
+
+function populateExSelect() {
+  const sel = document.getElementById('exSelect');
+  if (sel.options.length>0) return;
+  getAllExercises().forEach((ex,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=ex.name; sel.appendChild(o); });
+}
+
+function renderStrengthChart() {
+  const sel = document.getElementById('exSelect');
+  const idx = parseInt(sel.value);
+  const ex = getAllExercises()[idx];
+  const maxW = Math.max(currentWeek,parseInt(load('maxWeek',1)));
+  const labels=[], vals=[];
+  for (let w=Math.max(1,maxW-7); w<=maxW; w++) {
+    labels.push('Нед '+w);
+    vals.push(parseFloat(load(wKey(w,ex.dayId,ex.ei),''))||null);
+  }
+  const ctx = document.getElementById('strengthChart').getContext('2d');
+  if (sCI) sCI.destroy();
+  sCI = new Chart(ctx,{ type:'line', data:{ labels,
+    datasets:[{ data:vals, borderColor:'#7a6b4f', backgroundColor:'rgba(122,107,79,0.08)', tension:0.4, pointBackgroundColor:'#7a6b4f', pointRadius:4, spanGaps:true }]},
+    options:{ plugins:{legend:{display:false}}, scales:{
+      x:{ticks:{color:'#9a8c78',font:{size:10}},grid:{color:'#d4ccbc'}},
+      y:{ticks:{color:'#9a8c78',font:{size:10}},grid:{color:'#d4ccbc'},beginAtZero:false}
+    }}});
+}
+
+// ── TIMER ─────────────────────────────────────────────────────────────────
+let timerDuration = 60;
+let timerLeft = 60;
+let timerInterval = null;
+let timerRunning = false;
+
+function setPreset(secs, el) {
+  document.querySelectorAll('.timer-preset').forEach(p=>p.classList.remove('active-preset'));
+  if (el) el.classList.add('active-preset');
+  timerDuration = secs;
+  timerLeft = secs;
+  timerRunning = false;
+  clearInterval(timerInterval);
+  updateTimerDisplay();
+  document.getElementById('timerBubble').classList.remove('running');
+  document.getElementById('timerMainBtn').textContent = '▶';
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('timerMainBtn').textContent = '▶';
+    document.getElementById('timerBubble').classList.remove('running');
+  } else {
+    if (timerLeft <= 0) { timerLeft = timerDuration; }
+    timerRunning = true;
+    document.getElementById('timerMainBtn').textContent = '⏸';
+    document.getElementById('timerBubble').classList.add('running');
+    timerInterval = setInterval(() => {
+      timerLeft--;
+      updateTimerDisplay();
+      if (timerLeft <= 0) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        document.getElementById('timerMainBtn').textContent = '▶';
+        document.getElementById('timerBubble').classList.remove('running');
+        // vibrate on finish
+        if (navigator.vibrate) navigator.vibrate([300,100,300]);
+        timerLeft = 0;
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerLeft = timerDuration;
+  updateTimerDisplay();
+  document.getElementById('timerBubble').classList.remove('running');
+  document.getElementById('timerMainBtn').textContent = '▶';
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerLeft/60);
+  const s = timerLeft%60;
+  document.getElementById('timerDisplay').textContent = m+':'+(s<10?'0':'')+s;
+}
+
+(function(){
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+  s.onload=()=>renderAll();
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
